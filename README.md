@@ -44,7 +44,7 @@ console.log(result.result) // The final output of the task
 ```typescript
 const task = createTask({ taskTemplate: 'my-template', input: {} })
 
-const taskId = await task.getTaskId()   // Resolves as soon as the task is created
+const taskId = await task.getTaskId()   // Resolves once the task is validated and started
 const taskUrl = await task.getTaskUrl() // URL to view the task in the Requence UI
 
 await task.abort('No longer needed')    // Abort the running task
@@ -56,22 +56,22 @@ const result = await task
 
 The task handle is also an **AsyncIterable** — iterate over it to stream updates as the task executes.
 
-### Awaiting Finalization (Cheap Monitoring)
+### Confirming the Task Started (Cheap Monitoring)
 
-By default, awaiting the result or iterating the handle starts full SSE monitoring. If you only need to confirm that the task passed input validation and started on the backend — without tracking every node — await `task.finalized()`:
+By default, awaiting the result or iterating the handle starts full SSE monitoring. If you only need to confirm that the task passed input validation and started on the backend — without tracking every node — await `task.getTaskId()`:
 
 ```typescript
 const task = createTask({ taskTemplate: 'my-template', input: { /* ... */ } })
 
 try {
-  const taskId = await task.finalized()
+  const taskId = await task.getTaskId()
   console.log(`Task ${taskId} is running in the background`)
 } catch (error) {
   console.error('Validation failed:', error.message)
 }
 ```
 
-`finalized()` resolves with the task ID on success, or rejects with a `TaskError` if the task cannot be created (e.g. schema validation failure).
+`getTaskId()` resolves with the task ID once the task has passed validation and started on the backend, or rejects with a `TaskError` if the task cannot be created (e.g. schema validation failure). It never opens the SSE stream, so it stays cheap — and it never resolves with an ID for a task that failed to start.
 
 ## Options
 
